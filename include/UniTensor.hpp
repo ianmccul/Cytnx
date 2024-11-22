@@ -1800,12 +1800,13 @@ namespace cytnx {
    public:
     ///@cond
     boost::intrusive_ptr<UniTensor_base> _impl;
+    // Default ctor - create an empty UniTensor_base
     UniTensor() : _impl(new UniTensor_base()){};
-    UniTensor(const UniTensor &rhs) { this->_impl = rhs._impl; }
-    UniTensor &operator=(const UniTensor &rhs) {
-      this->_impl = rhs._impl;
-      return *this;
-    }
+    // Compiler generated copy, copy-assignment, move, and move-assignment
+    UniTensor(const UniTensor& rhs) = default;
+    UniTensor& operator=(const UniTensor &rhs) = default;
+    UniTensor(UniTensor&& rhs) noexcept = default;
+    UniTensor& operator=(UniTensor&& rhs) noexcept = default;
     ///@endcond
 
     //@{

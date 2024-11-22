@@ -46,8 +46,10 @@ namespace cytnx {
     struct Tproxy {
       boost::intrusive_ptr<Tensor_impl> _insimpl;
       std::vector<cytnx::Accessor> _accs;
-      Tproxy(boost::intrusive_ptr<Tensor_impl> _ptr, const std::vector<cytnx::Accessor> &accs)
-          : _insimpl(std::move(_ptr)), _accs(accs) {}
+      Tproxy(boost::intrusive_ptr<Tensor_impl> _ptr, std::vector<cytnx::Accessor> accs)
+          : _insimpl(std::move(_ptr)), _accs(std::move(accs)) {}
+
+      Tproxy(Tproxy&& rhs) noexcept = default;
 
       // when used to set elems:
       const Tensor &operator=(const Tensor &rhs) {
@@ -231,86 +233,64 @@ namespace cytnx {
     // these two are using the python way!
     //----------------------------------------
     template <class... Ts>
-    Tproxy operator()(const std::string &e1, const Ts &...elems) {
-      // std::cout << e1 << std::endl;
-      std::vector<cytnx::Accessor> tmp = Indices_resolver(e1, elems...);
-      return (*this)[tmp];
-    }
-    template <class... Ts>
-    Tproxy operator()(const cytnx_int64 &e1, const Ts &...elems) {
-      // std::cout << e1<< std::endl;
-      std::vector<cytnx::Accessor> tmp = Indices_resolver(e1, elems...);
-      return (*this)[tmp];
-    }
-    template <class... Ts>
-    Tproxy operator()(const cytnx::Accessor &e1, const Ts &...elems) {
-      // std::cout << e1 << std::endl;
-      std::vector<cytnx::Accessor> tmp = Indices_resolver(e1, elems...);
-      return (*this)[tmp];
-    }
-    template <class... Ts>
-    const Tproxy operator()(const std::string &e1, const Ts &...elems) const {
-      // std::cout << e1 << std::endl;
-      std::vector<cytnx::Accessor> tmp = Indices_resolver(e1, elems...);
-      return (*this)[tmp];
-    }
-    template <class... Ts>
-    const Tproxy operator()(const cytnx_int64 &e1, const Ts &...elems) const {
-      std::vector<cytnx::Accessor> tmp = Indices_resolver(e1, elems...);
-      return (*this)[tmp];
-    }
-    template <class... Ts>
-    const Tproxy operator()(const cytnx::Accessor &e1, const Ts &...elems) const {
-      std::vector<cytnx::Accessor> tmp = Indices_resolver(e1, elems...);
-      return (*this)[tmp];
+    Tproxy operator()(Ts&&... elems) {
+      std::vector<cytnx::Accessor> tmp = Indices_resolver(std::forward<Ts>(elems)...);
+      return (*this)[std::move(tmp)];
     }
 
+    template <class... Ts>
+    const Tproxy operator()(Ts&&... elems) const {
+      std::vector<cytnx::Accessor> tmp = Indices_resolver(std::forward<Ts>(elems)...);
+      return (*this)[std::move(tmp)];
+    }
     //-----------------------------------------
 
-    Tproxy operator[](const std::initializer_list<cytnx::Accessor> &accs) {
+    Tproxy operator[](std::initializer_list<cytnx::Accessor> accs) {
       std::vector<cytnx::Accessor> tmp = accs;
-      return (*this)[tmp];
+      return (*this)[std::move(tmp)];
     }
-    Tproxy operator[](const std::vector<cytnx::Accessor> &accs) {
-      return Tproxy(this->_impl, accs);
+    Tproxy operator[](std::vector<cytnx::Accessor> accs) {
+      return Tproxy(this->_impl, std::move(accs));
     }
 
-    const Tproxy operator[](const std::vector<cytnx::Accessor> &accs) const {
-      return Tproxy(this->_impl, accs);
+    const Tproxy operator[](std::vector<cytnx::Accessor> accs) const {
+      return Tproxy(this->_impl, std::move(accs));
     }
-    const Tproxy operator[](const std::initializer_list<cytnx::Accessor> &accs) const {
+    const Tproxy operator[](std::initializer_list<cytnx::Accessor> accs) const {
       std::vector<cytnx::Accessor> tmp = accs;
-      return (*this)[tmp];
+      return (*this)[std::move(tmp)];
     }
 
-    Tproxy operator[](const std::initializer_list<cytnx_int64> &accs) {
+    Tproxy operator[](std::initializer_list<cytnx_int64> accs) {
       std::vector<cytnx_int64> tmp = accs;
-      return (*this)[tmp];
+      return (*this)[std::move(tmp)];
     }
     Tproxy operator[](const std::vector<cytnx_int64> &accs) {
       std::vector<cytnx::Accessor> acc_in;
       for (int i = 0; i < accs.size(); i++) {
         acc_in.push_back(cytnx::Accessor(accs[i]));
       }
-      return Tproxy(this->_impl, acc_in);
+      return Tproxy(this->_impl, std::move(acc_in));
     }
-    const Tproxy operator[](const std::initializer_list<cytnx_int64> &accs) const {
+    const Tproxy operator[](std::initializer_list<cytnx_int64> accs) const {
       std::vector<cytnx_int64> tmp = accs;
-      return (*this)[tmp];
+      return (*this)[std::move(tmp)];
     }
     const Tproxy operator[](const std::vector<cytnx_uint64> &accs) const {
       std::vector<cytnx::Accessor> acc_in;
-      for (int i = 0; i < accs.size(); i++) {
-        acc_in.push_back(cytnx::Accessor(accs[i]));
+      acc_in.reserve(accs.size());
+      for (auto val : accs) {
+        acc_in.emplace_back(val);
       }
-      return Tproxy(this->_impl, acc_in);
+      return Tproxy(this->_impl, std::move(acc_in));
     }
     const Tproxy operator[](const std::vector<cytnx_int64> &accs) const {
       std::vector<cytnx::Accessor> acc_in;
-      for (int i = 0; i < accs.size(); i++) {
-        acc_in.push_back(cytnx::Accessor(accs[i]));
+      acc_in.reserve(accs.size());
+      for (auto val : accs) {
+        acc_in.emplace_back(val);
       }
-      return Tproxy(this->_impl, acc_in);
+      return Tproxy(this->_impl, std::move(acc_in));
     }
     ///@endcond
     //-------------------------------------------
@@ -399,7 +379,12 @@ namespace cytnx {
     ///@cond
     boost::intrusive_ptr<Tensor_impl> _impl;
     Tensor() : _impl(new Tensor_impl()){};
-    Tensor(const Tensor &rhs) { _impl = rhs._impl; }
+
+    // Use compiler-generated copy ctor, copy-assignment, move ctor, move-assignment
+    // Tensor(const Tensor& rhs) = default;
+    // Tensor& operator=(const Tensor &rhs) = default;
+    // Tensor(Tensor&& rhs) noexcept = default;
+    // Tensor& operator=(Tensor&& rhs) noexcept = default;
 
     /*
     template<class Tp>
@@ -410,11 +395,6 @@ namespace cytnx {
         this->_impl = tmp;
     }
     */
-
-    Tensor &operator=(const Tensor &rhs) {
-      _impl = rhs._impl;
-      return *this;
-    }
 
     void operator=(const Tproxy &rhsp) {  // this is used to handle proxy assignment
       this->_impl = rhsp._insimpl->get(rhsp._accs);
@@ -447,11 +427,10 @@ namespace cytnx {
     #### output>
     \verbinclude example/Tensor/Init.py.out
     */
-    void Init(const std::vector<cytnx_uint64> &shape, const unsigned int &dtype = Type.Double,
-              const int &device = -1, const bool &init_zero = true) {
-      boost::intrusive_ptr<Tensor_impl> tmp(new Tensor_impl());
-      this->_impl = tmp;
-      this->_impl->Init(shape, dtype, device, init_zero);
+    void Init(std::vector<cytnx_uint64> shape, unsigned int dtype = Type.Double,
+              int device = -1, bool init_zero = true) {
+      this->_impl = boost::intrusive_ptr<Tensor_impl>(new Tensor_impl());
+      this->_impl->Init(std::move(shape), dtype, device, init_zero);
     }
     // void Init(const Storage& storage) {
     //   boost::intrusive_ptr<Tensor_impl> tmp(new Tensor_impl());
@@ -477,11 +456,13 @@ namespace cytnx {
      *   the content of Tensor will be un-initialized.
      * @see cytnx::Tensor::Init
      */
-    Tensor(const std::vector<cytnx_uint64> &shape, const unsigned int &dtype = Type.Double,
-           const int &device = -1, const bool &init_zero = 1)
+    Tensor(std::vector<cytnx_uint64> shape, unsigned int dtype = Type.Double,
+           int device = -1, bool init_zero = true)
         : _impl(new Tensor_impl()) {
-      this->Init(shape, dtype, device, init_zero);
+      this->_impl->Init(std::move(shape), dtype, device, init_zero);
     }
+
+
     // Tensor(const Storage& storage)
     //     : _impl(new Tensor_impl()) {
     //   this->Init(storage);
@@ -620,15 +601,15 @@ namespace cytnx {
     */
     const bool &is_contiguous() const { return this->_impl->is_contiguous(); }
 
-    Tensor permute_(const std::vector<cytnx_uint64> &rnks) {
-      this->_impl->permute_(rnks);
+    Tensor permute_(std::vector<cytnx_uint64> rnks) {
+      this->_impl->permute_(std::move(rnks));
       return *this;
     }
     /// @cond
     template <class... Ts>
-    Tensor permute_(const cytnx_uint64 &e1, const Ts &...elems) {
-      std::vector<cytnx_uint64> argv = dynamic_arg_uint64_resolver(e1, elems...);
-      this->_impl->permute_(argv);
+    Tensor permute_(Ts&&... elems) {
+      std::vector<cytnx_uint64> argv{std::forward<Ts>(elems)...};
+      this->_impl->permute_(std::move(argv));
       return *this;
     }
     /// @endcond
@@ -651,16 +632,16 @@ namespace cytnx {
     #### output>
     \verbinclude example/Tensor/permute.py.out
     */
-    Tensor permute(const std::vector<cytnx_uint64> &rnks) const {
+    Tensor permute(std::vector<cytnx_uint64> rnks) const {
       Tensor out;
-      out._impl = this->_impl->permute(rnks);
+      out._impl = this->_impl->permute(std::move(rnks));
       return out;
     }
     /// @cond
     template <class... Ts>
-    Tensor permute(const cytnx_uint64 &e1, const Ts &...elems) const {
-      std::vector<cytnx_uint64> argv = dynamic_arg_uint64_resolver(e1, elems...);
-      return this->permute(argv);
+    Tensor permute(Ts&&... elems) const {
+      std::vector<cytnx_uint64> argv{std::forward<Ts>(elems)...};
+      return this->permute(std::move(argv));
     }
     /// @endcond
 
@@ -725,21 +706,21 @@ namespace cytnx {
     #### output>
     \verbinclude example/Tensor/reshape_.py.out
     */
-    void reshape_(const std::vector<cytnx_int64> &new_shape) { this->_impl->reshape_(new_shape); }
-    /// @cond
-    void reshape_(const std::vector<cytnx_uint64> &new_shape) {
-      std::vector<cytnx_int64> shape(new_shape.begin(), new_shape.end());
-      this->_impl->reshape_(shape);
+    void reshape_(std::vector<cytnx_int64> new_shape) {
+      this->_impl->reshape_(std::move(new_shape));
     }
-    void reshape_(const std::initializer_list<cytnx_int64> &new_shape) {
-      std::vector<cytnx_int64> shape = new_shape;
-      this->_impl->reshape_(shape);
+    /// @cond
+    void reshape_(std::vector<cytnx_uint64> new_shape) {
+      std::vector<cytnx_int64> shape(new_shape.begin(), new_shape.end());
+      this->_impl->reshape_(std::move(shape));
+    }
+    void reshape_(std::initializer_list<cytnx_int64> new_shape) {
+      this->_impl->reshape_(std::vector<cytnx_int64>(new_shape));
     }
     template <class... Ts>
-    void reshape_(const cytnx_int64 &e1, const Ts... elems) {
-      std::vector<cytnx_int64> shape = dynamic_arg_int64_resolver(e1, elems...);
-      // std::cout << shape << std::endl;
-      this->_impl->reshape_(shape);
+    void reshape_(Ts&&... elems) {
+      std::vector<cytnx_int64> shape{std::forward<Ts>(elems)...};
+      this->_impl->reshape_(std::move(shape));
     }
     /// @endcond
 
@@ -767,35 +748,34 @@ namespace cytnx {
     #### output>
     \verbinclude example/Tensor/reshape.py.out
     */
-    Tensor reshape(const std::vector<cytnx_int64> &new_shape) const {
+    Tensor reshape(std::vector<cytnx_int64> new_shape) const {
       Tensor out;
-      out._impl = this->_impl->reshape(new_shape);
+      out._impl = this->_impl->reshape(std::move(new_shape));
       return out;
     }
 
     /**
      * @see reshape(const std::vector<cytnx_int64> &new_shape) const
      */
-    Tensor reshape(const std::vector<cytnx_uint64> &new_shape) const {
-      std::vector<cytnx_int64> tmp(new_shape.size());
-      memcpy(&tmp[0], &new_shape[0], sizeof(cytnx_uint64) * new_shape.size());
+    Tensor reshape(std::vector<cytnx_uint64> new_shape) const {
+      std::vector<cytnx_int64> tmp(new_shape.begin(), new_shape.end());
       Tensor out;
-      out._impl = this->_impl->reshape(tmp);
+      out._impl = this->_impl->reshape(std::move(tmp));
       return out;
     }
 
     /**
      * @see reshape(const std::vector<cytnx_int64> &new_shape) const
      */
-    Tensor reshape(const std::initializer_list<cytnx_int64> &new_shape) const {
+    Tensor reshape(std::initializer_list<cytnx_int64> new_shape) const {
       return this->reshape(std::vector<cytnx_int64>(new_shape));
     }
 
     /// @cond
     template <class... Ts>
-    Tensor reshape(const cytnx_int64 &e1, const Ts &...elems) const {
-      std::vector<cytnx_int64> argv = dynamic_arg_int64_resolver(e1, elems...);
-      return this->reshape(argv);
+    Tensor reshape(Ts&&... elems) const {
+      std::vector<cytnx_int64> argv{std::forward<Ts>(elems)...};
+      return this->reshape(std::move(argv));
     }
     /// @endcond
 
@@ -855,27 +835,22 @@ namespace cytnx {
     \verbinclude example/Tensor/at.cpp.out
     */
     template <class T>
-    T &at(const std::vector<cytnx_uint64> &locator) {
-      return this->_impl->at<T>(locator);
+    T &at(std::vector<cytnx_uint64> locator) {
+      return this->_impl->at<T>(std::move(locator));
     }
 
     /**
      * @see at(const std::vector<cytnx_uint64> &locator)
      */
     template <class T>
-    const T &at(const std::vector<cytnx_uint64> &locator) const {
-      return this->_impl->at<T>(locator);
+    const T &at(std::vector<cytnx_uint64> locator) const {
+      return this->_impl->at<T>(std::move(locator));
     }
     /// @cond
     template <class T, class... Ts>
-    const T &at(const cytnx_uint64 &e1, const Ts &...elems) const {
-      std::vector<cytnx_uint64> argv = dynamic_arg_uint64_resolver(e1, elems...);
-      return this->at<T>(argv);
-    }
-    template <class T, class... Ts>
-    T &at(const cytnx_uint64 &e1, const Ts &...elems) {
-      std::vector<cytnx_uint64> argv = dynamic_arg_uint64_resolver(e1, elems...);
-      return this->at<T>(argv);
+    const T& at(const Ts&&... elems) const {
+      std::vector<cytnx_uint64> argv{std::forward<Ts>(elems)...};
+      return this->at<T>(std::move(argv));
     }
 
     const Scalar::Sproxy at(const std::vector<cytnx_uint64> &locator) const {
@@ -926,13 +901,11 @@ namespace cytnx {
     }
 
     const Scalar::Sproxy item() const {
-      Scalar::Sproxy out(this->storage()._impl, 0);
-      return out;
+      return Scalar::Sproxy(this->storage()._impl, 0);
     }
 
     Scalar::Sproxy item() {
-      Scalar::Sproxy out(this->storage()._impl, 0);
-      return out;
+      return Scalar::Sproxy(this->storage()._impl, 0);
     }
 
     ///@endcond
@@ -958,9 +931,9 @@ namespace cytnx {
     #### output>
     \verbinclude example/Tensor/get.py.out
     */
-    Tensor get(const std::vector<cytnx::Accessor> &accessors) const {
+    Tensor get(std::vector<cytnx::Accessor> accessors) const {
       Tensor out;
-      out._impl = this->_impl->get(accessors);
+      out._impl = this->_impl->get(std::move(accessors));
       return out;
     }
 
@@ -990,8 +963,8 @@ namespace cytnx {
     #### output>
     \verbinclude example/Tensor/set.py.out
     */
-    void set(const std::vector<cytnx::Accessor> &accessors, const Tensor &rhs) {
-      this->_impl->set(accessors, rhs._impl);
+    void set(std::vector<cytnx::Accessor> accessors, const Tensor &rhs) {
+      this->_impl->set(std::move(accessors), rhs._impl);
     }
 
     /**
@@ -1013,14 +986,13 @@ namespace cytnx {
     \verbinclude example/Tensor/set.py.out
     */
     template <class T>
-    void set(const std::vector<cytnx::Accessor> &accessors, const T &rc) {
-      this->_impl->set(accessors, rc);
+    void set(std::vector<cytnx::Accessor> accessors, const T &rc) {
+      this->_impl->set(std::move(accessors), rc);
     }
     ///@cond
     template <class T>
-    void set(const std::initializer_list<cytnx::Accessor> &accessors, const T &rc) {
-      std::vector<cytnx::Accessor> args = accessors;
-      this->set(args, rc);
+    void set(std::initializer_list<cytnx::Accessor> accessors, const T &rc) {
+      this->set(std::vector<cytnx::Accessor>(accessors), rc);
     }
     ///@endcond
 

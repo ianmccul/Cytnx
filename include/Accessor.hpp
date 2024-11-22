@@ -81,9 +81,13 @@ namespace cytnx {
     Accessor(const cytnx_int64 &min, const cytnx_int64 &max, const cytnx_int64 &step);
 
     // copy constructor:
-    Accessor(const Accessor &rhs);
+    Accessor(const Accessor &rhs) = default;
     // copy assignment:
-    Accessor &operator=(const Accessor &rhs);
+    Accessor &operator=(const Accessor &rhs) = default;
+    // move constructor:
+    Accessor(Accessor&& rhs) noexcept = default;
+      // move assignment:
+    Accessor& operator=(Accessor&& rhs) noexcept = default;
     ///@endcond
 
     int type() const { return this->_type; }
@@ -168,24 +172,9 @@ namespace cytnx {
   std::ostream &operator<<(std::ostream &os, const Accessor &in);
 
   // elements resolver
-  template <class T>
-  void _resolve_elems(std::vector<cytnx::Accessor> &cool, const T &a) {
-    cool.push_back(cytnx::Accessor(a));
-  }
-
-  template <class T, class... Ts>
-  void _resolve_elems(std::vector<cytnx::Accessor> &cool, const T &a, const Ts &...args) {
-    cool.push_back(cytnx::Accessor(a));
-    _resolve_elems(cool, args...);
-  }
-
-  template <class T, class... Ts>
-  std::vector<cytnx::Accessor> Indices_resolver(const T &a, const Ts &...args) {
-    // std::cout << a << std::endl;;
-    std::vector<cytnx::Accessor> idxs;
-    _resolve_elems(idxs, a, args...);
-    // cout << idxs << endl;
-    return idxs;
+  template <class... Ts>
+  std::vector<cytnx::Accessor> Indices_resolver(Ts&&... args) {
+    return {cytnx::Accessor(std::forward<Ts>(args))...};
   }
   ///@endcond
 

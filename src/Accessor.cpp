@@ -93,27 +93,6 @@ namespace cytnx {
     this->_step = step;
   }
 
-  // copy constructor:
-  Accessor::Accessor(const Accessor &rhs) {
-    this->_type = rhs._type;
-    this->_min = rhs._min;
-    this->_max = rhs._max;
-    this->loc = rhs.loc;
-    this->_step = rhs._step;
-    this->idx_list = rhs.idx_list;
-  }
-
-  // copy assignment:
-  Accessor &Accessor::operator=(const Accessor &rhs) {
-    this->_type = rhs._type;
-    this->_min = rhs._min;
-    this->_max = rhs._max;
-    this->loc = rhs.loc;
-    this->_step = rhs._step;
-    this->idx_list = rhs.idx_list;
-    return *this;
-  }
-
   // get the real len from dim
   // if _type is all, pos will be null, and len == dim
   // if _type is range, pos will be the locator, and len == len(pos)
