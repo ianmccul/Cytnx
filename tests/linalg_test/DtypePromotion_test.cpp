@@ -465,4 +465,18 @@ namespace cytnx {
     ExpectComplexNear(out, {1}, 6, -2);
   }
 
+  TEST(DtypePromotion, Axpy_rank_zero_y_is_not_default_argument) {
+    Tensor x(std::vector<cytnx_uint64>{}, Type.Double);
+    x.item<cytnx_double>() = 3.0;
+    Tensor y(std::vector<cytnx_uint64>{}, Type.Double);
+    y.item<cytnx_double>() = 5.0;
+
+    Tensor out = linalg::Axpy(Scalar(2.0), x, y);
+    ASSERT_TRUE(out.is_scalar());
+    EXPECT_DOUBLE_EQ(out.item<cytnx_double>(), 11.0);
+
+    Tensor vector = zeros({2}, Type.Double, Device.cpu);
+    EXPECT_THROW(linalg::Axpy(Scalar(2.0), vector, y), std::logic_error);
+  }
+
 }  // namespace cytnx

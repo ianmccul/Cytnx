@@ -17,7 +17,7 @@ namespace cytnx {
       // find the promoted dtype:
       unsigned int fin_dtype = Type.type_promote(a.dtype(), x.dtype());
 
-      if (y.shape().size() == 0)
+      if (y.dtype() == Type.Void)
         no_y = true;
       else {
         //   a*x + y -> return
